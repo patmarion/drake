@@ -52,3 +52,4 @@ VALGRIND_OUTPUT.xml
 *.ppms.gz
 glider_trajs.mat
 results_testRunning.mat
+drake/solvers/drawTreePoints.m
