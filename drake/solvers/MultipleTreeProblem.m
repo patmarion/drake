@@ -38,7 +38,7 @@ classdef MultipleTreeProblem
       warning('off','Drake:RigidBodyManipulator:ReplacedCylinder');
       opt = struct('mergingthreshold', 0.2,...
         'mindistance', 0.005,'activecollisionoptions', struct(), 'ikoptions', struct(),...
-        'steerfactor', 0.1, 'orientationweight', 1, 'maxedgelength', 0.05,...
+        'orientationweight', 1, 'maxedgelength', 0.05,...
         'angletol', 10*pi/180, 'positiontol', 1e-3, 'endeffectorpoint', [0; 0; 0]);
       optNames = fieldnames(opt);
       nArgs = length(varargin);
@@ -75,7 +75,6 @@ classdef MultipleTreeProblem
       obj.trees = OptimalTaskSpaceMotionPlanningTree.empty(obj.nTrees, 0);  
       for t = 1:obj.nTrees
         obj.trees(t) = OptimalTaskSpaceMotionPlanningTree(obj.robot, obj.endEffectorId, obj.endEffectorPoint);
-        obj.trees(t).steerFactor = opt.steerfactor;
         obj.trees(t) = obj.trees(t).setMinDistance(obj.minDistance);
         obj.trees(t) = obj.trees(t).setOrientationWeight(opt.orientationweight);
         obj.trees(t).max_edge_length = opt.maxedgelength;

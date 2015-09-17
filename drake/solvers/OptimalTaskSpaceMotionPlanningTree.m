@@ -4,7 +4,6 @@ classdef OptimalTaskSpaceMotionPlanningTree < TaskSpaceMotionPlanningTree
   %adds the following properties
 %     C             cost array
 %     gamma         RRT* parameter
-%     steerFactor   radius for the steering function
 %     traj          indices of the optimal trajectory
 %     eta           radius for tree rewiring
 %     costType      type of cost
@@ -13,7 +12,6 @@ classdef OptimalTaskSpaceMotionPlanningTree < TaskSpaceMotionPlanningTree
   properties
     C
     gamma
-    steerFactor
     traj
     eta
     costType = 'length';
@@ -29,7 +27,7 @@ classdef OptimalTaskSpaceMotionPlanningTree < TaskSpaceMotionPlanningTree
     function [obj, id_last] = init(obj, q_init)
       obj.C = NaN(1, obj.N);
       obj.C(1) = 0; %An initial cost might be needed if not using path length
-      obj.eta = obj.steerFactor;
+      obj.eta = obj.max_edge_length;
       
       %Compute Gamma
       R3Tree = obj.trees{obj.tspace_idx}.trees{1};
@@ -165,9 +163,9 @@ classdef OptimalTaskSpaceMotionPlanningTree < TaskSpaceMotionPlanningTree
       if nargin < 4
         d =  obj.distanceMetric(obj.getVertex(IdNearest), qNew);
       end
-      if d > obj.steerFactor;
+      if d > obj.max_edge_length;
         qPose = qNew(1:7);
-        qNew(1:7) = obj.trees{obj.tspace_idx}.interpolate(qPose, obj.trees{obj.tspace_idx}.V(:, IdNearest), (d-obj.steerFactor)/d);
+        qNew(1:7) = obj.trees{obj.tspace_idx}.interpolate(qPose, obj.trees{obj.tspace_idx}.V(:, IdNearest), (d-obj.max_edge_length)/d);
       end
     end
     
