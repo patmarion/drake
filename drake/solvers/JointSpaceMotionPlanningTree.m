@@ -25,7 +25,7 @@ classdef JointSpaceMotionPlanningTree < CartesianMotionPlanningTree
     function obj = compile(obj)
       obj.ikoptions = obj.ikoptions.updateRobot(obj.rbm);
       for i = 1:numel(obj.kinematic_constraints)
-        if obj.rbm.getMexModelPtr ~= obj.kinematic_constraints{i}.robot.getMexModelPtr()
+        if obj.rbm.getMexModelPtr ~= obj.kinematic_constraints{i}.robot.getMexModelPtr() && ~isa(obj.kinematic_constraints{i},'PostureConstraint')
           obj.kinematic_constraints{i} = obj.kinematic_constraints{i}.updateRobot(obj.rbm);
         end
       end
