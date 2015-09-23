@@ -100,7 +100,7 @@ classdef FinalPoseProblem
     
     function [qOpt, cost] = searchFinalPose(obj, xStart, xGoal)
       
-      kinSol = obj.robot.doKinematics(xStart(8:end));
+      kinSol = obj.robot.doKinematics(xStart);
       options.rotation_type = 2;
       options.use_mex = false;
       
@@ -116,7 +116,11 @@ classdef FinalPoseProblem
       armJoints = 13:19;
       nArmJoints = size(armJoints, 2);
       np = obj.robot.num_positions;
-      collisionLinksBody = setdiff(obj.activeCollisionOptions.body_idx, 9:15);
+      if isfield(obj.activeCollisionOptions, 'body_idx')
+        collisionLinksBody = setdiff(obj.activeCollisionOptions.body_idx, 9:15);
+      else
+        collisionLinksBody = 9:15;
+      end
       mapMirror.right = [1; 1; 1];
       mapMirror.left = [1; -1; 1];
        
@@ -134,6 +138,7 @@ classdef FinalPoseProblem
       for sph = randperm(nSph)
         iter = iter + 1;
         point = (sphCenters(:,sph).*mapMirror.(obj.graspingHand)) + tr2root;
+        xGoal
         shConstraint = WorldPositionConstraint(obj.robot, base, point, xGoal(1:3), xGoal(1:3));
         constraints = [{shConstraint}, obj.goalConstraints];
         [q, valid] = obj.jointSpaceTree.solveIK(obj.qNom, obj.qNom, constraints);
