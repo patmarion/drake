@@ -102,7 +102,7 @@ classdef FinalPoseProblem
       
       kinSol = obj.robot.doKinematics(xStart);
       options.rotation_type = 2;
-      options.use_mex = false;
+      options.compute_gradients = true;
       
       root = obj.capabilityMap.rootLink.(obj.graspingHand);
       endEffector = obj.capabilityMap.endEffectorLink.(obj.graspingHand);
@@ -138,14 +138,13 @@ classdef FinalPoseProblem
       for sph = randperm(nSph)
         iter = iter + 1;
         point = (sphCenters(:,sph).*mapMirror.(obj.graspingHand)) + tr2root;
-        xGoal
         shConstraint = WorldPositionConstraint(obj.robot, base, point, xGoal(1:3), xGoal(1:3));
         constraints = [{shConstraint}, obj.goalConstraints];
         [q, valid] = obj.jointSpaceTree.solveIK(obj.qNom, obj.qNom, constraints);
         kinSol = obj.robot.doKinematics(q, ones(obj.robot.num_positions, 1), options);
         palmPose = obj.robot.forwardKin(kinSol, endEffector, EEPoint, options);
-        targetPos = [palmPose(1:3); quat2rpy(palmPose(4:7))];
-        deltaX = zeros(6,1);
+        targetPos = palmPose(1:7);
+        deltaX = zeros(7,1);
         if valid
           phiBody = obj.robot.collisionDetect(q, false, struct('body_idx', collisionLinksBody));
           if all(phiBody > obj.minDistance)
@@ -160,8 +159,10 @@ classdef FinalPoseProblem
                   dgamma_dq = zeros(size(phi));
                   for coll = 1:size(phi,1)
                     if phi(coll) < 0
-                      JA = obj.computeJacobian(kinSol, armJoints, idxA(coll));
-                      JB = obj.computeJacobian(kinSol, armJoints, idxB(coll));
+                      [~,JA] = obj.robot.forwardKin(kinSol, idxA(coll), [0;0;0], options);
+                      [~,JB] = obj.robot.forwardKin(kinSol, idxB(coll), [0;0;0], options);
+                      JA = JA(:,armJoints);
+                      JB = JB(:,armJoints);
                       dD_dq = normal(:,coll)'*(JB(1:3,joint) - JA(1:3,joint));
                       dgamma_dq(coll) = exp(1./(c*phi(coll))).*(1-c*phi(coll))./(c*phi(coll))*c.*dD_dq;
                     else
@@ -170,7 +171,8 @@ classdef FinalPoseProblem
                   end
                   qNdot(joint) = sum(dgamma_dq);
                 end
-                J = obj.computeJacobian(kinSol, armJoints, endEffector);
+                [~,J] = obj.robot.forwardKin(kinSol, endEffector, [0;0;0], options);
+                J = J(:,armJoints);
                 Jpsi = J'*inv(J*J');
                 deltaQ = Jpsi*deltaX + (eye(nArmJoints) - Jpsi*J) * qNdot;
                 if any(abs(deltaQ) > deltaQmax)
@@ -184,7 +186,7 @@ classdef FinalPoseProblem
                 [phi,normal,~,~,idxA,idxB] = obj.robot.collisionDetect(q, false, obj.activeCollisionOptions);
                 kinSol = obj.robot.doKinematics(q, ones(obj.robot.num_positions, 1), options);
                 palmPose = obj.robot.forwardKin(kinSol, endEffector, [0;0;0], options);
-                deltaX = targetPos - [palmPose(1:3); quat2rpy(palmPose(4:7))];
+                deltaX = targetPos - palmPose(1:7);
                 eps = norm(deltaX);
                 nIter = nIter + 1;
                 phi = phi - obj.minDistance;
