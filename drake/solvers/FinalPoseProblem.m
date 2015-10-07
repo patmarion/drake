@@ -103,6 +103,7 @@ classdef FinalPoseProblem
       kinSol = obj.robot.doKinematics(xStart);
       options.rotation_type = 2;
       options.compute_gradients = true;
+      options.rotation_type = 1;
       
       root = obj.capabilityMap.rootLink.(obj.graspingHand);
       endEffector = obj.capabilityMap.endEffectorLink.(obj.graspingHand);
@@ -134,6 +135,7 @@ classdef FinalPoseProblem
       deltaQmax = 0.05;
       validConfs =  double.empty(np+1, 0);
       succ = zeros(nSph, 2);
+      v = obj.robot.constructVisualizer();
       
       for sph = randperm(nSph)
         iter = iter + 1;
@@ -143,8 +145,8 @@ classdef FinalPoseProblem
         [q, valid] = obj.jointSpaceTree.solveIK(obj.qNom, obj.qNom, constraints);
         kinSol = obj.robot.doKinematics(q, ones(obj.robot.num_positions, 1), options);
         palmPose = obj.robot.forwardKin(kinSol, endEffector, EEPoint, options);
-        targetPos = palmPose(1:7);
-        deltaX = zeros(7,1);
+        targetPos = palmPose;
+        deltaX = zeros(6,1);
         if valid
           phiBody = obj.robot.collisionDetect(q, false, struct('body_idx', collisionLinksBody));
           if all(phiBody > obj.minDistance)
@@ -186,7 +188,7 @@ classdef FinalPoseProblem
                 [phi,normal,~,~,idxA,idxB] = obj.robot.collisionDetect(q, false, obj.activeCollisionOptions);
                 kinSol = obj.robot.doKinematics(q, ones(obj.robot.num_positions, 1), options);
                 palmPose = obj.robot.forwardKin(kinSol, endEffector, [0;0;0], options);
-                deltaX = targetPos - palmPose(1:7);
+                deltaX = targetPos - palmPose;
                 eps = norm(deltaX);
                 nIter = nIter + 1;
                 phi = phi - obj.minDistance;
