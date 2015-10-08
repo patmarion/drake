@@ -114,14 +114,26 @@ classdef FinalPoseProblem
       rootPose = obj.robot.forwardKin(kinSol, root, rootPoint, 2);
       trPose = obj.robot.forwardKin(kinSol, base, [0;0;0], 2);
       tr2root = quat2rotmat(trPose(4:end))\(rootPose(1:3)-trPose(1:3));
-      armJoints = 13:19;
+%       !!!!!!WARNING:This works for val2 only!!!!!!!!!
+      if strcmp(obj.graspingHand, 'right')
+        armJoints = 13:19;
+      else
+        armJoints = 20:26;
+      end
+%       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       nArmJoints = size(armJoints, 2);
       np = obj.robot.num_positions;
+%       !!!!!!WARNING:This works for val2 only!!!!!!!!!
       if isfield(obj.activeCollisionOptions, 'body_idx')
-        collisionLinksBody = setdiff(obj.activeCollisionOptions.body_idx, 9:15);
+        if strcmp(obj.graspingHand, 'right')
+          collisionLinksBody = setdiff(obj.activeCollisionOptions.body_idx, 9:15);
+        else
+          collisionLinksBody = setdiff(obj.activeCollisionOptions.body_idx, 16:22);
+        end
       else
-        collisionLinksBody = 9:15;
+        collisionLinksBody = setdiff(1:numel(obj.robot.body), 16:22);
       end
+%       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       mapMirror.right = [1; 1; 1];
       mapMirror.left = [1; -1; 1];
        
@@ -135,7 +147,6 @@ classdef FinalPoseProblem
       deltaQmax = 0.05;
       validConfs =  double.empty(np+1, 0);
       succ = zeros(nSph, 2);
-      v = obj.robot.constructVisualizer();
       
       for sph = randperm(nSph)
         iter = iter + 1;
