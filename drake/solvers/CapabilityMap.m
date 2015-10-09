@@ -2,56 +2,58 @@ classdef CapabilityMap
   
   properties
     map
-    reachabilityIndex
-    sphCenters
-    sphDiameter
-    nSamples
-    angTolerance
-    posTolerance
+    reachability_index
+    sph_centers
+    sph_diameter
+    n_samples
+    ang_tolerance
+    pos_tolerance
     urdf
-    nSph
-    nPointsPerSphere
-    rootLink
-    rootPoint
-    endEffectorLink
-    endEffectorPoint
-    baseLink
+    n_spheres
+    n_points_per_sphere
+    root_link
+    root_point
+    end_effector_link
+    end_effector_point
+    base_link
+    active_spheres
   end
   
   methods
     
-    function obj = CapabilityMap(matFile)
+    function obj = CapabilityMap(mat_file)
       if nargin > 0
-        obj = obj.generateFromFile(matFile);
+        obj = obj.generateFromFile(mat_file);
       end
     end
     
     function obj = generateFromFile(obj, matFile)
       vars = load(matFile);
       obj.map = vars.map;
-      obj.reachabilityIndex = vars.reachabilityIndex;
-      obj.sphCenters = vars.sphCenters;
-      obj.sphDiameter = vars.options.sphDiameter;
-      obj.nSamples = vars.options.nSamples;
-      obj.angTolerance = vars.options.angTolerance;
-      obj.posTolerance = vars.options.posTolerance;
+      obj.reachability_index = vars.reachabilityIndex;
+      obj.sph_centers = vars.sphCenters;
+      obj.sph_diameter = vars.options.sphDiameter;
+      obj.n_samples = vars.options.nSamples;
+      obj.ang_tolerance = vars.options.angTolerance;
+      obj.pos_tolerance = vars.options.posTolerance;
       obj.urdf = vars.options.urdf;
-      obj.nSph = size(obj.map, 1);
-      obj.nPointsPerSphere = size(obj.map, 2);
-      obj.rootLink = vars.options.rootLink;
-      obj.rootPoint = vars.options.rootPoint;
-      obj.endEffectorLink = vars.options.endEffectorLink;
-      obj.endEffectorPoint = vars.options.endEffectorPoint;
-      obj.baseLink = vars.options.baseLink;
+      obj.n_spheres = size(obj.map, 1);
+      obj.n_points_per_sphere = size(obj.map, 2);
+      obj.root_link = vars.options.root_link;
+      obj.root_point = vars.options.root_point;
+      obj.end_effector_link = vars.options.end_effector_link;
+      obj.end_effector_point = vars.options.end_effector_point;
+      obj.base_link = vars.options.base_link;
+      obj.active_spheres = true(obj.n_spheres, 1);
     end
     
     function points = findPointsFromDirection(obj, direction, threshold)
-      [P, frames] = distributePointsOnSphere(obj.nPointsPerSphere);
-      points = false(obj.nPointsPerSphere, 1);
+      [P, frames] = distributePointsOnSphere(obj.n_points_per_sphere);
+      points = false(obj.n_points_per_sphere, 1);
       sphere();
       hold on
       plot3(P(1,:), P(2,:), P(3,:), 'r.')
-      for p = 1:obj.nPointsPerSphere
+      for p = 1:obj.n_points_per_sphere
         if acos(frames(p,:,3)*direction)/norm(direction) <= threshold
           points(p) = true;
 %           plot3([P(1,p), P(1,p) - frames(p, 1, 3)'], [P(2,p), P(2,p) - frames(p, 2, 3)'], [P(3,p), P(3,p) - frames(p, 3, 3)'], 'b')
@@ -59,73 +61,85 @@ classdef CapabilityMap
       end
     end
 
-    function [spheres, obj] = findSpheresFromDirection(obj, direction, minSph, maxSph, sagittalAngle,...
-        transverseAngle, sagittalWeight, transverseWeight)
-      if nargin > 4
-        obj = obj.prune(sagittalAngle, transverseAngle, sagittalWeight, transverseWeight, 0);
+    function [active_spheres, obj] = findSpheresFromDirection(obj, direction, min_sph, max_sph, reset_map, sagittal_angle,...
+        transverse_angle, sagittal_weight, transverse_weight)
+      
+      if nargin > 5
+        obj = obj.prune(sagittal_angle, transverse_angle, sagittal_weight, transverse_weight, 0, reset_map);
       end
-      spheres = false(obj.nSph, 1);
+      assert(min_sph < obj.active_spheres)
+      active_spheres = obj.active_spheres;
       ns = 0;
       threshold = 0;
-      while ns < minSph
+      while ns < min_sph
+        obj.active_spheres = active_spheres;
         points = obj.findPointsFromDirection(direction, threshold);
-        for s = 1:obj.nSph
-          if any(obj.map(s, points))
-            spheres(s) = true;
+        for s = 1:obj.n_spheres
+          if obj.active_spheres(s) && all(~obj.map(s, points))
+            obj.active_spheres(s) = false;
           end
         end
-        ns = nnz(spheres);
+        ns = nnz(obj.active_spheres);
         threshold = threshold + pi/50;
       end
-      if ns > maxSph
-        reachabilityWeight = 0.5;
-        while ns > maxSph
-          obj = obj.prune(sagittalAngle, transverseAngle, sagittalWeight, transverseWeight, reachabilityWeight);
-          reachabilityWeight = reachabilityWeight + 0.5;
+      if ns > max_sph
+        reachability_weight = 0.5;
+        while ns > max_sph
+          obj = obj.prune(sagittal_angle, transverse_angle, sagittal_weight, transverse_weight, reachability_weight, false);
+          reachability_weight = reachability_weight + 0.5;
           points = obj.findPointsFromDirection(direction, threshold - pi/50);
-          spheres = false(obj.nSph, 1);
-          for s = 1:obj.nSph
+          obj.active_spheres = false(obj.n_spheres, 1);
+          for s = 1:obj.n_spheres
             if any(obj.map(s, points))
-              spheres(s) = true;
+              obj.active_spheres(s) = true;
             end
           end
-          ns = nnz(spheres);
+          ns = nnz(obj.active_spheres);
         end
       end
     end
     
-    function drawCapabilityMap(obj, direction, minSph, maxSph)
+    function drawCapabilityMap(obj, direction, min_sph, max_sph)
       lcmClient = LCMGLClient('CapabilityMap');
-      [spheres, obj] = obj.findSpheresFromDirection(direction, minSph, maxSph, 0, 0, 2, 1.5);
-      for sph = 1:obj.nSph
+      [spheres, obj] = obj.findSpheresFromDirection(direction, min_sph, max_sph, 0, 0, 2, 1.5);
+      for sph = 1:obj.n_spheres
         if spheres(sph)
-          lcmClient.sphere(obj.sphCenters(:,sph), obj.sphDiameter/2, 20, 20);
+          lcmClient.sphere(obj.sph_centers(:,sph), obj.sph_diameter/2, 20, 20);
         end
       end
       disp(nnz(spheres))
       lcmClient.switchBuffers();
     end
     
-    function obj = prune(obj, sagittalAngle,...
-        transverseAngle, sagittalWeight, transverseWeight, reachabilityWeight)
+    function obj = prune(obj, sagittal_angle,...
+        transverse_angle, sagittal_weight, transverse_weight, reachability_weight, reset_map)
       
-      Dmax = max(obj.reachabilityIndex);
-      indices = [];
+      if reset_map
+        obj = obj.resetActiveSpheres();
+      end
       
-      for sph = 1:obj.nSph
-        sa = atan2(obj.sphCenters(3,sph), obj.sphCenters(1,sph));
-        ta = atan2(obj.sphCenters(2,sph), obj.sphCenters(1,sph));
-        sagittalCost = sagittalWeight * abs(sa - sagittalAngle);
-        transverseCost = transverseWeight * abs(ta - transverseAngle);
-        reachabilityCost = reachabilityWeight * (Dmax - obj.reachabilityIndex(sph));
-        if sqrt(sagittalCost^2 + transverseCost^2) + reachabilityCost < 2
-          indices(end + 1) = sph;
+      Dmax = max(obj.reachability_index);
+      
+      for sph = 1:obj.n_spheres
+        if obj.active_spheres(sph)
+          sa = atan2(obj.sph_centers(3,sph), obj.sph_centers(1,sph));
+          ta = atan2(obj.sph_centers(2,sph), obj.sph_centers(1,sph));
+          sagittal_cost = sagittal_weight * abs(sa - sagittal_angle);
+          transverse_cost = transverse_weight * abs(ta - transverse_angle);
+          reachability_cost = reachability_weight * (Dmax - obj.reachability_index(sph));
+          if sqrt(sagittal_cost^2 + transverse_cost^2) + reachability_cost >= 2
+            obj.active_spheres(sph) = false;
+          end
         end
       end
-      obj.nSph = length(indices);
-      obj.reachabilityIndex = obj.reachabilityIndex(indices);
+      obj.n_spheres = length(indices);
+      obj.reachability_index = obj.reachability_index(indices);
       obj.map = obj.map(indices, :);
-      obj.sphCenters = obj.sphCenters(:, indices);
+      obj.sph_centers = obj.sph_centers(:, indices);
+    end
+    
+    function obj = resetActiveSpheres(obj)
+      obj.active_spheres = true(obj.n_spheres, 1);
     end
     
   end
