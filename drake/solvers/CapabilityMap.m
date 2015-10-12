@@ -50,7 +50,7 @@ classdef CapabilityMap
     end
     
     function points = findPointsFromDirection(obj, direction, threshold)
-      [~, frames] = distributePointsOnSphere(obj.n_points_per_sphere);
+      [~, frames] = obj.distributePointsOnSphere(obj.n_points_per_sphere);
       points = false(obj.n_points_per_sphere, 1);
 %       sphere();
 %       hold on
@@ -104,7 +104,7 @@ classdef CapabilityMap
     
     function drawActiveSpheres(obj, direction, min_sph, max_sph)
       lcmClient = LCMGLClient('CapabilityMap');
-      obj = obj.reduceActiveSet(direction, min_sph, max_sph, true, 0, 0, 2, 1.5);
+%       obj = obj.reduceActiveSet(direction, min_sph, max_sph, true, 0, 0, 2, 1.5);
       for sph = 1:obj.n_spheres
         if obj.active_spheres(sph)
           lcmClient.sphere(obj.sph_centers(:,sph), obj.sph_diameter/2, 20, 20);
@@ -140,6 +140,10 @@ classdef CapabilityMap
     
     function obj = resetActiveSpheres(obj)
       obj.active_spheres = true(obj.n_spheres, 1);
+    end
+    
+    function centres = getActiveSphereCentres(obj)
+      centres = obj.sph_centers(:, obj.active_spheres);
     end
     
   end
