@@ -77,6 +77,7 @@ classdef FinalPoseProblem
         qGoal = obj.searchFinalPose(obj.x_start);
         if isempty(qGoal)
           info = obj.FAIL_NO_FINAL_POSE;
+          x_goal = obj.x_goal;
           disp('Failed to find a feasible final configuration')
           return
         else
