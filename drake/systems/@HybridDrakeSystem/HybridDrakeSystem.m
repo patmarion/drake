@@ -192,6 +192,11 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
     end
 
     function x0 = getInitialState(obj)
+      if ~isempty(obj.initial_state)
+        x0 = obj.initial_state;
+        return;
+      end
+      
       m = getInitialMode(obj);
       x0 = [m; getInitialState(obj.modes{m})];
       % pad if necessary:
@@ -299,7 +304,9 @@ classdef (InferiorClasses = {?DrakeSystem}) HybridDrakeSystem < DrakeSystem
         if (any(zcs2<0))
           active_id2 = find(zcs2<0);
           %        disp(obj);
-          warning('Drake:HybridDrakeSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2);
+          for j = 1:numel(active_id2)
+            warning('Drake:HybridDrakeSystem:SuccessiveZeroCrossings','Transitioned from mode %s to mode %s, and immediately triggered guard number %d\n',obj.mode_names{m},obj.mode_names{to_mode_num},active_id2(j));
+          end
           %        keyboard;
         end % useful for debugging successive zcs.
       end

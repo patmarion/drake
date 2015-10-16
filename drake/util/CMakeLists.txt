@@ -1,10 +1,13 @@
+
 if (simulink_FOUND)
   add_mex(realtime realtime.cpp)
-  endif()
+endif()
 
 add_mex(barycentricInterpolation barycentricInterpolation.cpp)
 
 if (LCM_FOUND AND MATLAB_FOUND)
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
+
   if (simulink_FOUND)
     add_mex(lcmLogger lcmLogger.cpp)
     pods_use_pkg_config_packages(lcmLogger lcm)
@@ -33,7 +36,7 @@ pods_install_pkg_config_file(drake-util
 
 if (MATLAB_FOUND)
   add_mex(drakeMexUtil SHARED drakeMexUtil.cpp MexWrapper.cpp)
-  target_link_libraries(drakeMexUtil drakePolynomial drakeGradientUtil)
+  target_link_libraries(drakeMexUtil drakePolynomial)
   # todo: use this again once I can assume everyone has CMAKE version >= 2.8.8
   #add_mex(drakeUtil OBJECT drakeUtil.cpp)
 
@@ -48,22 +51,21 @@ endif()
 if (LCM_FOUND)
   # note: requires drakeUtil header file, but not linking against it because
   # we only need methods that are templated and defined in the header
+  include_directories(${PROJECT_SOURCE_DIR}/pod-build/lcmgen)
   include_directories (${PROJECT_SOURCE_DIR}/systems/trajectories )
+  
   add_library(drakeLCMUtil SHARED lcmUtil.cpp)
-  add_dependencies(drakeLCMUtil ${LCMTYPES_C_LIBRARY})
+  add_dependencies(drakeLCMUtil drake_lcmtypes lcmtype_agg_hpp)
   target_link_libraries(drakeLCMUtil drakeTrajectories)
   pods_install_headers(lcmUtil.h DESTINATION drake)
   pods_install_libraries(drakeLCMUtil)
 endif()
 
-add_library(drakeGradientUtil SHARED drakeGradientUtil.cpp)
-pods_install_libraries(drakeGradientUtil)
 pods_install_headers(drakeGradientUtil.h DESTINATION drake)
 
 add_library(drakeGeometryUtil SHARED drakeGeometryUtil.cpp expmap2quat.cpp)
-target_link_libraries(drakeGeometryUtil drakeGradientUtil)
 pods_install_libraries(drakeGeometryUtil)
-pods_install_headers(drakeGeometryUtil.h DESTINATION drake)
+pods_install_headers(drakeGeometryUtil.h expmap2quat.h DESTINATION drake)
 pods_install_pkg_config_file(drake-geometry-util
   LIBS -ldrakeGeometryUtil
   REQUIRES
@@ -77,34 +79,32 @@ pods_install_pkg_config_file(drake-convex-hull
   REQUIRES
   VERSION 0.0.1)
 
-pods_install_headers(drakeFloatingPointUtil.h DESTINATION drake)
-
 pods_install_headers(GradientVar.h DESTINATION drake)
 
 if (MATLAB_FOUND)
   add_mex(cylindrical2cartesianmex cylindrical2cartesianmex.cpp)
-  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(cylindrical2cartesianmex drakeGeometryUtil)
   add_mex(cartesian2cylindricalmex cartesian2cylindricalmex.cpp)
-  target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(cartesian2cylindricalmex drakeGeometryUtil)
 
   add_mex(quat2expmapmex quat2expmapmex.cpp)
-  target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapmex drakeMexUtil drakeGeometryUtil)
 
   add_mex(expmap2quatImplmex expmap2quatImplmex.cpp)
-  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(expmap2quatImplmex drakeMexUtil drakeGeometryUtil)
 
   add_mex(flipExpmapmex flipExpmapmex.cpp)
-  target_link_libraries(flipExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(flipExpmapmex drakeMexUtil drakeGeometryUtil)
 
   add_mex(unwrapExpmapmex unwrapExpmapmex.cpp)
-  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(unwrapExpmapmex drakeMexUtil drakeGeometryUtil)
 
   add_mex(quat2expmapSequencemex quat2expmapSequencemex.cpp)
-  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
+  target_link_libraries(quat2expmapSequencemex drakeMexUtil drakeGeometryUtil)
 
   add_mex(closestExpmapmex closestExpmapmex.cpp)
-  target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil drakeGradientUtil)
-  
+  target_link_libraries(closestExpmapmex drakeMexUtil drakeGeometryUtil)
+
   add_mex(resolveCenterOfPressuremex resolveCenterOfPressuremex.cpp)
   target_link_libraries(resolveCenterOfPressuremex drakeMexUtil drakeUtil)
 endif()
@@ -114,11 +114,8 @@ add_subdirectory(test)
 
 # Mex debugging tools:
 if (0) #NOT WIN32)
-add_mex(debugMex SHARED debugMexLib.cpp)
-target_link_libraries(debugMex -ldl)
-#set_property( SOURCE debugMexLib.cpp PROPERTY COMPILE_FLAGS -DMX_COMPAT_32 )
 add_mex(drake_debug_mex EXECUTABLE drakeDebugMex.cpp)
-target_link_libraries(drake_debug_mex drakeUtil -ldl)
+target_link_libraries(drake_debug_mex drakeMexUtil -ldl)
 
 message(STATUS "Writing drake_debug_mex.sh")
 file(WRITE ${CMAKE_BINARY_DIR}/bin/drake_debug_mex.sh
