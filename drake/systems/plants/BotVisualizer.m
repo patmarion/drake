@@ -37,12 +37,12 @@ classdef BotVisualizer < RigidBodyVisualizer
       lc.subscribe('DRAKE_VIEWER_STATUS',obj.status_agg);
 
       % check if there is a viewer already running
-      [~,ck] = system('ps ax 2> /dev/null | grep -i "drake_viewer\|ddConsoleApp" | grep -c -v grep');
+      [~,ck] = system('ps ax 2> /dev/null | grep -i "drake_viewer\|directorPython" | grep -c -v grep');
       if (str2num(ck)<1) 
         % try launching director first
-        if exist(fullfile(pods_get_bin_path,'ddConsoleApp'))
+        if exist(fullfile(pods_get_bin_path,'directorPython'))
           disp('attempting to launch the drake director')
-          retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'ddConsoleApp'),' -m ddapp.drakevisualizer &> ddConsoleApp.out &']);
+          retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'directorPython'),' -m director.drakevisualizer &> directorPython.out &']);
 
           if isempty(obj.status_agg.getNextMessage(5000)) % wait for viewer to come up
             error('Drake:BotVisualizer:AutostartFailed','Failed to automatically start up a viewer (or to receive the ack, see https://github.com/RobotLocomotion/drake/issues/317)');
@@ -51,7 +51,7 @@ classdef BotVisualizer < RigidBodyVisualizer
       end
       
       % if still no viewer, then launch the drake viewer
-      [~,ck] = system('ps ax 2> /dev/null | grep -i "drake_viewer\|ddConsoleApp" | grep -c -v grep');
+      [~,ck] = system('ps ax 2> /dev/null | grep -i "drake_viewer\|directorPython" | grep -c -v grep');
       if (str2num(ck)<1) 
         disp('launching drake_viewer...');
         retval = systemWCMakeEnv([fullfile(pods_get_bin_path,'drake_viewer'),' &> drake_viewer.out &']);
