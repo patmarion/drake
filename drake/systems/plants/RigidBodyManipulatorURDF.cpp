@@ -355,7 +355,14 @@ bool parseGeometry(TiXmlElement* node, const map<string,string>& package_map, co
     attr = shape_node->Attribute("scale");
     if (attr) {
       stringstream s(attr);
-      s >> mesh.scale;
+      // supports a single scalar value or 3-vector value.
+      s >> mesh.scale[0];
+      if (s.good()) {
+        s >> mesh.scale[1] >> mesh.scale[2];
+      } else {
+        mesh.scale[1] = mesh.scale[0];
+        mesh.scale[2] = mesh.scale[0];
+      }
     }
 
     element.setGeometry(mesh);
