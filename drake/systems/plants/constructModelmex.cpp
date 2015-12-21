@@ -294,6 +294,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
         }
       }
       b->setCollisionFilter(group,mask);
+      printf("  findModelLink(model, \"%s\")->setCollisionFilter(%lu, %lu);\n", b->linkname.c_str(), group.to_ulong(), mask.to_ulong());
     }
 
     model->bodies.push_back(b);
