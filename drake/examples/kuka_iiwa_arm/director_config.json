@@ -1,12 +1,12 @@
 {
   "modelName" : "kuka_iiwa",
   "urdfConfig": {
-    "default": "urdf/iiwa14_simplified_collision.urdf",
-    "robotState": "urdf/iiwa14_simplified_collision.urdf",
+    "default":    "urdf/iiwa14_schunk_gripper.urdf",
+    "robotState": "urdf/iiwa14_schunk_gripper.urdf",
     "ik":         "urdf/iiwa14_simplified_collision.urdf",
     "chull":      "urdf/iiwa14_simplified_collision.urdf",
-    "playback":   "urdf/iiwa14_simplified_collision.urdf",
-    "teleop":     "urdf/iiwa14_simplified_collision.urdf"
+    "playback":   "urdf/iiwa14_schunk_gripper.urdf",
+    "teleop":     "urdf/iiwa14_schunk_gripper.urdf"
   },
 
   "teleopJointGroups" : [
@@ -54,12 +54,22 @@
   "fixedPointFile" : "kuka_iiwa_fp.csv",
   "postureDatabaseFile" : "stored_poses.json",
 
-  "handCombinations": [],
+  "handCombinations" : [
+    { "side" : "left",
+      "handType" : "left_schunk",
+      "handLinkName" : "iiwa_link_ee",
+      "handUrdf" : "schunk_description/urdf/wsg/wsg_50.urdf",
+      "handRootLink" : "palm",
+      "robotMountLink" : "palm",
+      "palmLink" : "palm"
+    }
+  ],
+
   "userConfig" : ["fixedBaseArm"],
 
-   "endEffectorConfig" : {
+  "endEffectorConfig" : {
     "endEffectorLinkNames": ["iiwa_link_ee"],
-    "graspOffsetFrame" : [[0,0,0], [0,0,0]],
+    "graspOffsetFrame" : [[0.185,0.0,0], [-0.3926,0.0,0.0]],
     "fixedJoints" : ["base_x","base_y","base_z","base_roll","base_pitch","base_yaw"]
   }
 
