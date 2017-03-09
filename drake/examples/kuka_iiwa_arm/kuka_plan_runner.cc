@@ -42,7 +42,7 @@ namespace {
 const char* const kLcmStatusChannel = "IIWA_STATUS";
 const char* const kLcmCommandChannel = "IIWA_COMMAND";
 const char* const kLcmPlanChannel = "COMMITTED_ROBOT_PLAN";
-const int kNumJoints = 7;
+const int kNumJoints = 14;
 
 typedef PiecewisePolynomial<double> PPType;
 typedef PPType::PolynomialType PPPoly;
@@ -166,7 +166,8 @@ class RobotPlanRunner {
 int do_main(int argc, const char* argv[]) {
   auto tree = std::make_unique<RigidBodyTree<double>>();
   parsers::urdf::AddModelInstanceFromUrdfFileToWorld(
-      GetDrakePath() + "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
+//      GetDrakePath() + "/examples/kuka_iiwa_arm/models/iiwa14/iiwa14.urdf",
+        std::string(std::getenv("SPARTAN_SOURCE_DIR")) + "/models/iiwa/dual_iiwa_description/iiwa14_simplified_collision.urdf",
       multibody::joints::kFixed, tree.get());
 
   RobotPlanRunner runner(*tree);
